@@ -6,16 +6,37 @@ import (
 	"os"
 )
 
-func main() {
+func read() string {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Fprint(os.Stdout, "$ ")
+	for {
+		fmt.Fprint(os.Stdout, "$ ")
 
-	line, error := reader.ReadString('\n')
-	if error != nil {
-		os.Exit(0)
+		line, error := reader.ReadString('\n')
+		if error != nil {
+			return ""
+		}
+
+		line = line[:len(line)-1]
+
+		if len(line) != 0 {
+			return line
+		}
 	}
+}
 
-	line = line[:len(line)-1]
+func eval(line string) {
 	fmt.Fprintf(os.Stdout, "%s: command not found\n", line)
+}
+
+func main() {
+	for {
+		line := read()
+
+		if len(line) == 0 {
+			break
+		}
+
+		eval(line)
+	}
 }
