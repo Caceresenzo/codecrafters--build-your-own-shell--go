@@ -94,6 +94,9 @@ func builtin_cd(arguments []string) {
 
 	if strings.HasPrefix(path, "/") {
 		absolute = path
+	} else if strings.HasPrefix(path, ".") {
+		current, _ := os.Getwd()
+		absolute = fmt.Sprintf("%s/%s", current, path)
 	}
 
 	if len(absolute) == 0 {
