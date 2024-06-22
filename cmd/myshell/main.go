@@ -40,16 +40,23 @@ func eval(line string) {
 		return
 	}
 
-	fmt.Fprintf(os.Stdout, "%s: command not found\n", line)
+	fmt.Fprintf(os.Stdout, "%s: command not found\n", program)
 }
 
 func builtin_exit(arguments []string) {
 	os.Exit(0)
 }
 
+func builtin_echo(arguments []string) {
+	parts := arguments[1:]
+	line := strings.Join(parts, " ")
+	fmt.Fprintf(os.Stdout, "%s\n", line)
+}
+
 func main() {
 	builtins = make(map[string]BuiltinFunction)
 	builtins["exit"] = builtin_exit
+	builtins["echo"] = builtin_echo
 
 	for {
 		line := read()
