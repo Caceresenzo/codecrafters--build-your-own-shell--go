@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -17,8 +18,8 @@ func read() string {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 
-		line, error := reader.ReadString('\n')
-		if error != nil {
+		line, err := reader.ReadString('\n')
+		if err != nil {
 			return ""
 		}
 
@@ -34,9 +35,21 @@ func eval(line string) {
 	arguments := strings.Split(line, " ")
 	program := arguments[0]
 
-	builtin, found := builtins[program]
-	if found {
+	if builtin, found := builtins[program]; found {
 		builtin(arguments)
+		return
+	}
+
+	if path, found := locate(program); found {
+		command := exec.Cmd{
+			Path:   path,
+			Args:   arguments,
+			Stdin:  os.Stdin,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+
+		command.Run()
 		return
 	}
 
@@ -76,7 +89,7 @@ func locate(program string) (string, bool) {
 	for _, directory := range directories {
 		path := fmt.Sprintf("%s/%s", directory, program)
 
-		if _, error := os.Stat(path); error == nil {
+		if _, err := os.Stat(path); err == nil {
 			return path, true
 		}
 	}
