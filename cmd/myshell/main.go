@@ -56,7 +56,7 @@ func eval(line string) {
 	fmt.Fprintf(os.Stdout, "%s: command not found\n", program)
 }
 
-func builtin_exit(arguments []string) {
+func builtin_exit(_ []string) {
 	os.Exit(0)
 }
 
@@ -82,6 +82,11 @@ func builtin_type(arguments []string) {
 	fmt.Fprintf(os.Stdout, "%s: not found\n", program)
 }
 
+func builtin_pwd(_ []string) {
+	current, _ := os.Getwd()
+	fmt.Fprintf(os.Stdout, "%s\n", current)
+}
+
 func locate(program string) (string, bool) {
 	PATH := os.Getenv("PATH")
 	directories := strings.Split(PATH, ":")
@@ -102,6 +107,7 @@ func main() {
 	builtins["exit"] = builtin_exit
 	builtins["echo"] = builtin_echo
 	builtins["type"] = builtin_type
+	builtins["pwd"] = builtin_pwd
 
 	for {
 		line := read()
