@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -87,6 +88,23 @@ func builtin_pwd(_ []string) {
 	fmt.Fprintf(os.Stdout, "%s\n", current)
 }
 
+func builtin_cd(arguments []string) {
+	absolute := ""
+	path := arguments[1]
+
+	if strings.HasPrefix(path, "/") {
+		absolute = path
+	}
+
+	if len(absolute) == 0 {
+		return
+	}
+
+	if err := os.Chdir(absolute); errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", path)
+	}
+}
+
 func locate(program string) (string, bool) {
 	PATH := os.Getenv("PATH")
 	directories := strings.Split(PATH, ":")
@@ -108,6 +126,7 @@ func main() {
 	builtins["echo"] = builtin_echo
 	builtins["type"] = builtin_type
 	builtins["pwd"] = builtin_pwd
+	builtins["cd"] = builtin_cd
 
 	for {
 		line := read()
