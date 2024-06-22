@@ -53,10 +53,23 @@ func builtin_echo(arguments []string) {
 	fmt.Fprintf(os.Stdout, "%s\n", line)
 }
 
+func builtin_type(arguments []string) {
+	program := arguments[1]
+
+	_, found := builtins[program]
+	if found {
+		fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", program)
+		return
+	}
+
+	fmt.Fprintf(os.Stdout, "%s: not found\n", program)
+}
+
 func main() {
 	builtins = make(map[string]BuiltinFunction)
 	builtins["exit"] = builtin_exit
 	builtins["echo"] = builtin_echo
+	builtins["type"] = builtin_type
 
 	for {
 		line := read()
