@@ -97,6 +97,13 @@ func builtin_cd(arguments []string) {
 	} else if strings.HasPrefix(path, ".") {
 		current, _ := os.Getwd()
 		absolute = fmt.Sprintf("%s/%s", current, path)
+	} else if strings.HasPrefix(path, "~") {
+		HOME := os.Getenv("HOME")
+		if len(HOME) == 0 {
+			fmt.Fprintf(os.Stdout, "cd: $HOME is not set")
+		} else {
+			absolute = fmt.Sprintf("%s/%s", HOME, path[1:])
+		}
 	}
 
 	if len(absolute) == 0 {
