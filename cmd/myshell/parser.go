@@ -10,6 +10,7 @@ const (
 	END    = '\000'
 	SPACE  = ' '
 	SINGLE = '\''
+	DOUBLE = '"'
 )
 
 func next(parser *line_parser) rune {
@@ -51,6 +52,15 @@ func parse_argv(line string) []string {
 			for {
 				character = next(&state)
 				if character == END || character == SINGLE {
+					break
+				}
+
+				state.builder = append(state.builder, character)
+			}
+		case DOUBLE:
+			for {
+				character = next(&state)
+				if character == END || character == DOUBLE {
 					break
 				}
 
