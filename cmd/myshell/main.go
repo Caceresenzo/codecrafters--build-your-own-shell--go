@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 func read() string {
@@ -28,7 +27,7 @@ func read() string {
 }
 
 func eval(line string) {
-	arguments := strings.Split(line, " ")
+	arguments := parse_argv(line)
 	program := arguments[0]
 
 	if builtin, found := builtins[program]; found {
