@@ -1,19 +1,20 @@
 package main
 
-type line_parser struct {
+type lineParser struct {
 	chars   []rune
 	index   int
 	builder []rune
 }
 
 const (
-	END    = '\000'
-	SPACE  = ' '
-	SINGLE = '\''
-	DOUBLE = '"'
+	end       = '\000'
+	space     = ' '
+	single    = '\''
+	double    = '"'
+	backslash = '\\'
 )
 
-func next(parser *line_parser) rune {
+func next(parser *lineParser) rune {
 	length := len(parser.chars)
 
 	if parser.index < length {
@@ -23,49 +24,69 @@ func next(parser *line_parser) rune {
 		return parser.chars[index]
 	}
 
-	return END
+	return end
 }
 
-func parse_argv(line string) []string {
+func handleBackslash(state *lineParser, inQuote bool) {
+	character := next(state)
+	if character == end {
+		return
+	}
+
+	if inQuote {
+		state.builder = append(state.builder, backslash)
+	}
+
+	state.builder = append(state.builder, character)
+}
+
+func parseArgv(line string) []string {
 	argv := make([]string, 0)
 
-	state := line_parser{
+	state := lineParser{
 		chars:   []rune(line),
 		index:   0,
 		builder: make([]rune, 0),
 	}
 
-	character := END
+	character := end
 	for {
 		character = next(&state)
-		if character == END {
+		if character == end {
 			break
 		}
 
 		switch character {
-		case SPACE:
+		case space:
 			if len(state.builder) != 0 {
 				argv = append(argv, string(state.builder))
 				state.builder = state.builder[:0]
 			}
-		case SINGLE:
+		case single:
 			for {
 				character = next(&state)
-				if character == END || character == SINGLE {
+				if character == end || character == single {
 					break
 				}
 
 				state.builder = append(state.builder, character)
 			}
-		case DOUBLE:
+		case double:
 			for {
 				character = next(&state)
-				if character == END || character == DOUBLE {
+				if character == end || character == double {
 					break
 				}
 
-				state.builder = append(state.builder, character)
+				switch character {
+				case backslash:
+					handleBackslash(&state, true)
+				default:
+					state.builder = append(state.builder, character)
+				}
 			}
+		case backslash:
+			handleBackslash(&state, false)
 		default:
 			state.builder = append(state.builder, character)
 		}

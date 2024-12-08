@@ -27,7 +27,7 @@ func read() string {
 }
 
 func eval(line string) {
-	arguments := parse_argv(line)
+	arguments := parseArgv(line)
 	program := arguments[0]
 
 	if builtin, found := builtins[program]; found {
