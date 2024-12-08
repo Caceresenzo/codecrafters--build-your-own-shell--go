@@ -34,10 +34,26 @@ func handleBackslash(state *lineParser, inQuote bool) {
 	}
 
 	if inQuote {
-		state.builder = append(state.builder, backslash)
+		mapped := mapBackslashCharacter(character)
+		if mapped != end {
+			character = mapped
+		} else {
+			state.builder = append(state.builder, backslash)
+		}
 	}
 
 	state.builder = append(state.builder, character)
+}
+
+func mapBackslashCharacter(character rune) rune {
+	switch character {
+	case backslash:
+		fallthrough
+	case double:
+		return character
+	default:
+		return end
+	}
 }
 
 func parseArgv(line string) []string {
