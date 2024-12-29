@@ -27,11 +27,20 @@ func read() string {
 }
 
 func eval(line string) {
-	arguments := parseArgv(line)
+	parsedLine := parseArgv(line)
+
+	io, valid := OpenIo(parsedLine.redirects)
+	if !valid {
+		return
+	}
+
+	defer io.Close()
+
+	arguments := parsedLine.arguments
 	program := arguments[0]
 
 	if builtin, found := builtins[program]; found {
-		builtin(arguments)
+		builtin(arguments, io)
 		return
 	}
 
@@ -40,8 +49,8 @@ func eval(line string) {
 			Path:   path,
 			Args:   arguments,
 			Stdin:  os.Stdin,
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
+			Stdout: io.Output(),
+			Stderr: io.Error(),
 		}
 
 		command.Run()

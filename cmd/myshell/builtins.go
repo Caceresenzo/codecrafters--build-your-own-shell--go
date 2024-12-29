@@ -7,11 +7,17 @@ import (
 	"strings"
 )
 
-type BuiltinFunction func([]string)
+type BuiltinFunction func([]string, Io)
 
 var builtins map[string]BuiltinFunction
 
 func locate(program string) (string, bool) {
+	if strings.HasPrefix(program, "/") {
+		if _, err := os.Stat(program); err == nil {
+			return program, true
+		}
+	}
+
 	PATH := os.Getenv("PATH")
 	directories := strings.Split(PATH, ":")
 
@@ -26,38 +32,38 @@ func locate(program string) (string, bool) {
 	return "", false
 }
 
-func builtin_exit(_ []string) {
+func builtin_exit(_ []string, _ Io) {
 	os.Exit(0)
 }
 
-func builtin_echo(arguments []string) {
+func builtin_echo(arguments []string, io Io) {
 	parts := arguments[1:]
 	line := strings.Join(parts, " ")
-	fmt.Fprintf(os.Stdout, "%s\n", line)
+	fmt.Fprintf(io.Output(), "%s\n", line)
 }
 
-func builtin_type(arguments []string) {
+func builtin_type(arguments []string, io Io) {
 	program := arguments[1]
 
 	if _, found := builtins[program]; found {
-		fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", program)
+		fmt.Fprintf(io.Output(), "%s is a shell builtin\n", program)
 		return
 	}
 
 	if path, found := locate(program); found {
-		fmt.Fprintf(os.Stdout, "%s is %s\n", program, path)
+		fmt.Fprintf(io.Output(), "%s is %s\n", program, path)
 		return
 	}
 
-	fmt.Fprintf(os.Stdout, "%s: not found\n", program)
+	fmt.Fprintf(io.Output(), "%s: not found\n", program)
 }
 
-func builtin_pwd(_ []string) {
+func builtin_pwd(_ []string, io Io) {
 	current, _ := os.Getwd()
-	fmt.Fprintf(os.Stdout, "%s\n", current)
+	fmt.Fprintf(io.Output(), "%s\n", current)
 }
 
-func builtin_cd(arguments []string) {
+func builtin_cd(arguments []string, io Io) {
 	absolute := ""
 	path := arguments[1]
 
@@ -69,7 +75,7 @@ func builtin_cd(arguments []string) {
 	} else if strings.HasPrefix(path, "~") {
 		HOME := os.Getenv("HOME")
 		if len(HOME) == 0 {
-			fmt.Fprintf(os.Stdout, "cd: $HOME is not set")
+			fmt.Fprintf(io.Error(), "cd: $HOME is not set")
 		} else {
 			absolute = fmt.Sprintf("%s/%s", HOME, path[1:])
 		}
@@ -80,6 +86,6 @@ func builtin_cd(arguments []string) {
 	}
 
 	if err := os.Chdir(absolute); errors.Is(err, os.ErrNotExist) {
-		fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", path)
+		fmt.Fprintf(io.Error(), "cd: %s: No such file or directory\n", path)
 	}
 }
