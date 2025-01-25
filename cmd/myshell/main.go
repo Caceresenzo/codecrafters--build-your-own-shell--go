@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/pkg/term/termios"
@@ -36,6 +37,33 @@ func autocomplete(line *string) AutocompleteResult {
 		}
 	}
 
+	PATH := os.Getenv("PATH")
+	for _, directory := range strings.Split(PATH, ":") {
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			continue
+		}
+
+		for _, entry := range entries {
+			name := entry.Name()
+			if !strings.HasPrefix(name, *line) {
+				continue
+			}
+
+			path := strings.Join([]string{directory, name}, "/")
+
+			stat, err := os.Stat(path)
+			if err != nil || !stat.Mode().IsRegular() || stat.Mode().Perm()&0111 == 0 {
+				continue
+			}
+
+			candidate := name[len(*line):]
+			if !slices.Contains(candidates, candidate) {
+				candidates = append(candidates, candidate)
+			}
+		}
+	}
+
 	if len(candidates) == 0 {
 		return AutocompleteNone
 	}
@@ -46,6 +74,17 @@ func autocomplete(line *string) AutocompleteResult {
 
 		return AutocompleteNone
 	}
+
+	slices.SortFunc(candidates, func(left string, right string) int {
+		left_length := len(left)
+		right_length := len(right)
+
+		if left_length != right_length {
+			return left_length - right_length
+		}
+
+		return strings.Compare(left, right)
+	})
 
 	fmt.Printf("%d %v", len(candidates), candidates)
 	panic("TODO")
