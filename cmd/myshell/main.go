@@ -52,6 +52,10 @@ func autocomplete(line *string) AutocompleteResult {
 	// return AutocompleteMore
 }
 
+func bell() {
+	os.Stdout.Write([]byte{'\a'})
+}
+
 type ReadResult int
 
 const (
@@ -114,9 +118,11 @@ func read() (string, ReadResult) {
 
 			switch result {
 			case AutocompleteNone:
-				break
+				bell()
+
 			case AutocompleteFound:
 				break
+
 			case AutocompleteMore:
 				break
 			}
