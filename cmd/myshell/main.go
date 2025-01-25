@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"slices"
-	"strings"
 
 	"github.com/pkg/term/termios"
 	"golang.org/x/sys/unix"
@@ -13,105 +11,6 @@ import (
 
 func prompt() {
 	os.Stdout.Write([]byte{'$', ' '})
-}
-
-type AutocompleteResult int
-
-const (
-	AutocompleteNone AutocompleteResult = iota
-	AutocompleteFound
-	AutocompleteMore
-)
-
-func autocompletePrint(line *string, candidate string) {
-	os.Stdout.WriteString(candidate)
-	*line += candidate
-
-	os.Stdout.WriteString(" ")
-	*line += " "
-}
-
-func autocomplete(line *string, bell_rang bool) AutocompleteResult {
-	var candidates []string
-
-	for name := range builtins {
-		if strings.HasPrefix(name, *line) {
-			candidate := name[len(*line):]
-			candidates = append(candidates, candidate)
-		}
-	}
-
-	PATH := os.Getenv("PATH")
-	for _, directory := range strings.Split(PATH, ":") {
-		entries, err := os.ReadDir(directory)
-		if err != nil {
-			continue
-		}
-
-		for _, entry := range entries {
-			name := entry.Name()
-			if !strings.HasPrefix(name, *line) {
-				continue
-			}
-
-			path := strings.Join([]string{directory, name}, "/")
-
-			stat, err := os.Stat(path)
-			if err != nil || !stat.Mode().IsRegular() || stat.Mode().Perm()&0111 == 0 {
-				continue
-			}
-
-			candidate := name[len(*line):]
-			if !slices.Contains(candidates, candidate) {
-				candidates = append(candidates, candidate)
-			}
-		}
-	}
-
-	if len(candidates) == 0 {
-		return AutocompleteNone
-	}
-
-	if len(candidates) == 1 {
-		candidate := candidates[0]
-		autocompletePrint(line, candidate)
-
-		return AutocompleteNone
-	}
-
-	if bell_rang {
-		slices.SortFunc(candidates, func(left string, right string) int {
-			left_length := len(left)
-			right_length := len(right)
-
-			if left_length != right_length {
-				return left_length - right_length
-			}
-
-			return strings.Compare(left, right)
-		})
-
-		os.Stdout.WriteString("\n")
-
-		for index, candidate := range candidates {
-			if index != 0 {
-				os.Stdout.WriteString("  ")
-			}
-
-			os.Stdout.WriteString(*line)
-			os.Stdout.WriteString(candidate)
-		}
-
-		os.Stdout.WriteString("\n")
-		prompt()
-		os.Stdout.WriteString(*line)
-	}
-
-	return AutocompleteMore
-}
-
-func bell() {
-	os.Stdout.Write([]byte{'\a'})
 }
 
 type ReadResult int
