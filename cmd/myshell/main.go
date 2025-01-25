@@ -4,17 +4,60 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/pkg/term/termios"
 	"golang.org/x/sys/unix"
 )
 
+type AutocompleteResult int
+
+const (
+	AutocompleteNone AutocompleteResult = iota
+	AutocompleteFound
+	AutocompleteMore
+)
+
+func autocompletePrint(line *string, candidate string) {
+	os.Stdout.WriteString(candidate)
+	*line += candidate
+
+	os.Stdout.WriteString(" ")
+	*line += " "
+}
+
+func autocomplete(line *string) AutocompleteResult {
+	var candidates []string
+
+	for name := range builtins {
+		if strings.HasPrefix(name, *line) {
+			candidate := name[len(*line):]
+			candidates = append(candidates, candidate)
+		}
+	}
+
+	if len(candidates) == 0 {
+		return AutocompleteNone
+	}
+
+	if len(candidates) == 1 {
+		candidate := candidates[0]
+		autocompletePrint(line, candidate)
+
+		return AutocompleteNone
+	}
+
+	fmt.Printf("%d %v", len(candidates), candidates)
+	panic("TODO")
+	// return AutocompleteMore
+}
+
 type ReadResult int
 
 const (
-	ReadResultQuit    ReadResult = iota
-	ReadResultEmpty   ReadResult = iota
-	ReadResultContent ReadResult = iota
+	ReadResultQuit ReadResult = iota
+	ReadResultEmpty
+	ReadResultContent
 )
 
 func read() (string, ReadResult) {
@@ -64,6 +107,18 @@ func read() (string, ReadResult) {
 				return "", ReadResultEmpty
 			} else {
 				return line, ReadResultContent
+			}
+
+		case '\t':
+			result := autocomplete(&line)
+
+			switch result {
+			case AutocompleteNone:
+				break
+			case AutocompleteFound:
+				break
+			case AutocompleteMore:
+				break
 			}
 
 		case 0x1b:
