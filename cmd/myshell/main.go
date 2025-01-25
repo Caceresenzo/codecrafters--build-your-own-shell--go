@@ -11,6 +11,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func prompt() {
+	os.Stdout.Write([]byte{'$', ' '})
+}
+
 type AutocompleteResult int
 
 const (
@@ -27,7 +31,7 @@ func autocompletePrint(line *string, candidate string) {
 	*line += " "
 }
 
-func autocomplete(line *string) AutocompleteResult {
+func autocomplete(line *string, bell_rang bool) AutocompleteResult {
 	var candidates []string
 
 	for name := range builtins {
@@ -75,20 +79,35 @@ func autocomplete(line *string) AutocompleteResult {
 		return AutocompleteNone
 	}
 
-	slices.SortFunc(candidates, func(left string, right string) int {
-		left_length := len(left)
-		right_length := len(right)
+	if bell_rang {
+		slices.SortFunc(candidates, func(left string, right string) int {
+			left_length := len(left)
+			right_length := len(right)
 
-		if left_length != right_length {
-			return left_length - right_length
+			if left_length != right_length {
+				return left_length - right_length
+			}
+
+			return strings.Compare(left, right)
+		})
+
+		os.Stdout.WriteString("\n")
+
+		for index, candidate := range candidates {
+			if index != 0 {
+				os.Stdout.WriteString("  ")
+			}
+
+			os.Stdout.WriteString(*line)
+			os.Stdout.WriteString(candidate)
 		}
 
-		return strings.Compare(left, right)
-	})
+		os.Stdout.WriteString("\n")
+		prompt()
+		os.Stdout.WriteString(*line)
+	}
 
-	fmt.Printf("%d %v", len(candidates), candidates)
-	panic("TODO")
-	// return AutocompleteMore
+	return AutocompleteMore
 }
 
 func bell() {
@@ -104,7 +123,7 @@ const (
 )
 
 func read() (string, ReadResult) {
-	os.Stdout.Write([]byte{'$', ' '})
+	prompt()
 
 	var stdinFd = os.Stdin.Fd()
 
@@ -126,7 +145,8 @@ func read() (string, ReadResult) {
 
 	defer termios.Tcsetattr(stdinFd, termios.TCSANOW, &previous)
 
-	var line = ""
+	line := ""
+	bell_rang := false
 
 	buffer := make([]byte, 1)
 	for {
@@ -153,17 +173,19 @@ func read() (string, ReadResult) {
 			}
 
 		case '\t':
-			result := autocomplete(&line)
+			result := autocomplete(&line, bell_rang)
 
 			switch result {
 			case AutocompleteNone:
+				bell_rang = false
 				bell()
 
 			case AutocompleteFound:
-				break
+				bell_rang = false
 
 			case AutocompleteMore:
-				break
+				bell_rang = true
+				bell()
 			}
 
 		case 0x1b:
