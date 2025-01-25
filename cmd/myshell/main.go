@@ -1,27 +1,84 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/pkg/term/termios"
+	"golang.org/x/sys/unix"
 )
 
-func read() string {
-	reader := bufio.NewReader(os.Stdin)
+type ReadResult int
 
+const (
+	ReadResultQuit    ReadResult = iota
+	ReadResultEmpty   ReadResult = iota
+	ReadResultContent ReadResult = iota
+)
+
+func read() (string, ReadResult) {
+	os.Stdout.Write([]byte{'$', ' '})
+
+	var stdinFd = os.Stdin.Fd()
+
+	var previous unix.Termios
+	if err := termios.Tcgetattr(stdinFd, &previous); err != nil {
+		panic(err)
+	}
+
+	var new = unix.Termios(previous)
+	new.Iflag &= unix.IGNCR  // ignore received CR
+	new.Lflag ^= unix.ICANON // disable canonical mode
+	new.Lflag ^= unix.ECHO   // disable echo of input
+	// new.Lflag ^= unix.ISIG   // disable signal
+	new.Cc[unix.VMIN] = 1
+	new.Cc[unix.VTIME] = 0
+	if err := termios.Tcsetattr(stdinFd, termios.TCSANOW, &new); err != nil {
+		panic(err)
+	}
+
+	defer termios.Tcsetattr(stdinFd, termios.TCSANOW, &previous)
+
+	var line = ""
+
+	buffer := make([]byte, 1)
 	for {
-		fmt.Fprint(os.Stdout, "$ ")
-
-		line, err := reader.ReadString('\n')
+		_, err := os.Stdin.Read(buffer)
 		if err != nil {
-			return ""
+			return "", ReadResultQuit
 		}
 
-		line = line[:len(line)-1]
+		character := buffer[0]
 
-		if len(line) != 0 {
-			return line
+		switch character {
+		case 0x4:
+			return "", ReadResultQuit
+
+		case '\r':
+			fallthrough
+		case '\n':
+			os.Stdout.Write([]byte{'\r', '\n'})
+
+			if len(line) == 0 {
+				return "", ReadResultEmpty
+			} else {
+				return line, ReadResultContent
+			}
+
+		case 0x1b:
+			os.Stdin.Read(buffer) // '['
+			os.Stdin.Read(buffer) // 'A' or 'B' or 'C' or 'D'
+
+		case 0x7f:
+			if len(line) != 0 {
+				line = line[:len(line)-1]
+				os.Stdout.Write([]byte{'\b', ' ', '\b'})
+			}
+
+		default:
+			os.Stdout.Write(buffer)
+			line += string(character)
 		}
 	}
 }
@@ -69,12 +126,15 @@ func main() {
 	builtins["cd"] = builtin_cd
 
 	for {
-		line := read()
+		line, result := read()
 
-		if len(line) == 0 {
-			break
+		switch result {
+		case ReadResultQuit:
+			return
+		case ReadResultEmpty:
+			continue
+		case ReadResultContent:
+			eval(line)
 		}
-
-		eval(line)
 	}
 }
