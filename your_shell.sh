@@ -12,4 +12,8 @@ tmpFile=$(mktemp)
 ( cd $(dirname "$0") &&
 	go build -o "$tmpFile" ./cmd/myshell )
 
-exec "$tmpFile" "$@"
+"$tmpFile" "$@" &
+
+echo "started"
+sleep 10
+echo "done"
