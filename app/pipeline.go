@@ -6,10 +6,10 @@ import (
 	"os/exec"
 )
 
-func runSingle(parsedLine parsedLine) {
+func runSingle(parsedLine parsedLine) int {
 	io, valid := OpenIo(parsedLine.redirects)
 	if !valid {
-		return
+		return 1
 	}
 
 	defer io.Close()
@@ -19,7 +19,7 @@ func runSingle(parsedLine parsedLine) {
 
 	if builtin, found := builtins[program]; found {
 		builtin(arguments, io)
-		return
+		return 0
 	}
 
 	if path, found := locate(program); found {
@@ -32,10 +32,11 @@ func runSingle(parsedLine parsedLine) {
 		}
 
 		command.Run()
-		return
+		return command.ProcessState.ExitCode()
 	}
 
 	fmt.Fprintf(os.Stdout, "%s: command not found\n", program)
+	return 1
 }
 
 func runMultiple(parsedLines []parsedLine) {
@@ -53,29 +54,42 @@ func runMultiple(parsedLines []parsedLine) {
 		arguments := parsedLine.arguments
 		program := arguments[0]
 
-		if path, found := locate(program); found {
-			command := &exec.Cmd{
+		var command *exec.Cmd = nil
+
+		if _, found := builtins[program]; found {
+			command = &exec.Cmd{
+				Path: shellProgramPath,
+				Args: append([]string{shellProgramPath}, arguments...),
+			}
+		} else if path, found := locate(program); found {
+			command = &exec.Cmd{
 				Path: path,
 				Args: arguments,
 			}
-
-			if !is_first {
-				previousCommand := commands[index-1]
-
-				in, _ := previousCommand.StdoutPipe()
-				command.Stdin = in
-			} else {
-				command.Stdin = os.Stdin
-			}
-
-			if is_last {
-				command.Stdout = os.Stdout
-			}
-
-			commands = append(commands, command)
 		} else {
-			fmt.Fprintf(os.Stdout, "%s: command not found\n", program)
+			command = &exec.Cmd{
+				Path: shellProgramPath,
+				Args: append([]string{shellProgramPath}, program),
+			}
 		}
+
+		if !is_first {
+			previousCommand := commands[index-1]
+
+			in, _ := previousCommand.StdoutPipe()
+			command.Stdin = in
+		} else {
+			command.Stdin = os.Stdin
+		}
+
+		if is_last {
+			// TODO Redirect also other commands
+			command.Stdout = io.Output()
+		}
+
+		command.Stderr = io.Error()
+
+		commands = append(commands, command)
 	}
 
 	for index, command := range commands {
