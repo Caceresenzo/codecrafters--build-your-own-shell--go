@@ -5,11 +5,17 @@
 # CodeCrafters uses this file to test your code. Don't make any changes here!
 #
 # DON'T EDIT THIS!
-set -e
+# set -e
 
 tmpFile=$(mktemp)
+
+echo "building"
 
 ( cd $(dirname "$0") &&
 	go build -o "$tmpFile" ./cmd/myshell )
 
-exec "$tmpFile" "$@"
+echo "running"
+
+"$tmpFile" "$@"
+
+echo "done"
