@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/pkg/term/termios"
 	"golang.org/x/sys/unix"
@@ -105,37 +103,13 @@ func read() (string, ReadResult) {
 }
 
 func eval(line string) {
-	parsedLine := parseArgv(line)
+	commands := parseArgv(line)
 
-	io, valid := OpenIo(parsedLine.redirects)
-	if !valid {
-		return
+	if len(commands) == 1 {
+		runSingle(commands[0])
+	} else {
+		runMultiple(commands)
 	}
-
-	defer io.Close()
-
-	arguments := parsedLine.arguments
-	program := arguments[0]
-
-	if builtin, found := builtins[program]; found {
-		builtin(arguments, io)
-		return
-	}
-
-	if path, found := locate(program); found {
-		command := exec.Cmd{
-			Path:   path,
-			Args:   arguments,
-			Stdin:  os.Stdin,
-			Stdout: io.Output(),
-			Stderr: io.Error(),
-		}
-
-		command.Run()
-		return
-	}
-
-	fmt.Fprintf(os.Stdout, "%s: command not found\n", program)
 }
 
 func main() {
@@ -159,3 +133,13 @@ func main() {
 		}
 	}
 }
+
+// func main() {
+// 	c1 := exec.Command("ls")
+// 	c2 := exec.Command("wc", "-l")
+// 	c2.Stdin, _ = c1.StdoutPipe()
+// 	c2.Stdout = os.Stdout
+// 	_ = c2.Start()
+// 	_ = c1.Run()
+// 	_ = c2.Wait()
+// }

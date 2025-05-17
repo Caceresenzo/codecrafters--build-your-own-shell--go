@@ -21,6 +21,7 @@ type redirect struct {
 type lineParser struct {
 	chars     []rune
 	index     int
+	commands  []parsedLine
 	arguments []string
 	redirects []redirect
 }
@@ -37,6 +38,7 @@ const (
 	double      = '"'
 	backslash   = '\\'
 	greaterThan = '>'
+	pipe        = '|'
 )
 
 type nullString struct {
@@ -106,6 +108,16 @@ func (parser *lineParser) handleRedirect(streamName standardStreamName) {
 	})
 }
 
+func (parser *lineParser) handlePipe() {
+	parser.commands = append(parser.commands, parsedLine{
+		arguments: parser.arguments,
+		redirects: parser.redirects,
+	})
+
+	parser.arguments = make([]string, 0)
+	parser.redirects = make([]redirect, 0)
+}
+
 func (parser *lineParser) nextArgument() nullString {
 	builder := make([]rune, 0)
 
@@ -151,6 +163,8 @@ func (parser *lineParser) nextArgument() nullString {
 			parser.handleBackslash(&builder, false)
 		case greaterThan:
 			parser.handleRedirect(standardOutput)
+		case pipe:
+			parser.handlePipe()
 		default:
 			if unicode.IsDigit(character) && parser.peek() == greaterThan {
 				parser.next()
@@ -185,10 +199,11 @@ func mapBackslashCharacter(character rune) rune {
 	}
 }
 
-func parseArgv(line string) parsedLine {
+func parseArgv(line string) []parsedLine {
 	parser := lineParser{
 		chars:     []rune(line),
 		index:     -1,
+		commands:  make([]parsedLine, 0),
 		arguments: make([]string, 0),
 		redirects: make([]redirect, 0),
 	}
@@ -202,8 +217,12 @@ func parseArgv(line string) parsedLine {
 		parser.arguments = append(parser.arguments, argument.value)
 	}
 
-	return parsedLine{
-		arguments: parser.arguments,
-		redirects: parser.redirects,
+	if len(parser.arguments) != 0 {
+		parser.commands = append(parser.commands, parsedLine{
+			arguments: parser.arguments,
+			redirects: parser.redirects,
+		})
 	}
+
+	return parser.commands
 }
