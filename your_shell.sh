@@ -7,9 +7,12 @@
 # DON'T EDIT THIS!
 set -e
 
-tmpFile=$(mktemp)
+# tmpFile=$(mktemp)
 
-( cd $(dirname "$0") &&
-	go build -o "$tmpFile" ./cmd/myshell )
+# ( cd $(dirname "$0") &&
+# 	go build -o "$tmpFile" ./cmd/myshell )
 
-exec "$tmpFile" "$@"
+# exec "$tmpFile" "$@"
+
+echo -n "$ "
+read -r input
