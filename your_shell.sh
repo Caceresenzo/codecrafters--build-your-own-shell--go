@@ -6,10 +6,12 @@
 #
 # DON'T EDIT THIS!
 set -e
+# set -x
 
 tmpFile=$(mktemp)
 
+# echo "cd $(dirname "$0") && go build -o "$tmpFile" ./cmd/myshell"
 ( cd $(dirname "$0") &&
-	go build -o "$tmpFile" ./cmd/myshell )
+	go build -o "$tmpFile" ./cmd/myshell >/dev/stderr)
 
-exec "$tmpFile" "$@"
+"$tmpFile" "$@"
