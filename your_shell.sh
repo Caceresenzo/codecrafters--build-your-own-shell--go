@@ -6,10 +6,15 @@
 #
 # DON'T EDIT THIS!
 set -e
+set -x
 
 tmpFile=$(mktemp)
 
-( cd $(dirname "$0") &&
-	go build -o "$tmpFile" ./cmd/myshell )
+cd /app
+go build -o "$tmpFile" ./cmd/myshell && echo "done" || echo "failed"
 
-exec "$tmpFile" "$@"
+echo "running"
+
+"$tmpFile" "$@"
+
+echo "done"
