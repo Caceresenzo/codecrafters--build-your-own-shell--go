@@ -6,10 +6,24 @@
 #
 # DON'T EDIT THIS!
 set -e
+set -x
 
 tmpFile=$(mktemp)
 
-( cd $(dirname "$0") &&
-	go build -o "$tmpFile" ./cmd/myshell )
+echo "building"
 
-exec "$tmpFile" "$@"
+sleep 1
+echo "building2"
+
+sleep 3
+echo "building3"
+
+
+cd /app
+go build -o "$tmpFile" ./cmd/myshell
+
+echo "running"
+
+"$tmpFile" "$@"
+
+echo "done"
