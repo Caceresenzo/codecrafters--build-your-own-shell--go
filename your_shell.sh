@@ -6,10 +6,14 @@
 #
 # DON'T EDIT THIS!
 set -e
+# set -x
 
 tmpFile=$(mktemp)
 
-( cd $(dirname "$0") &&
-	go build -o "$tmpFile" ./cmd/myshell )
+# echo "cd $(dirname "$0") && go build -o "$tmpFile" ./cmd/myshell"
+(
+	cd $(dirname "$0")
+	go build -o /tmp/codecrafters-build-shell-go app/*.go
+)
 
-exec "$tmpFile" "$@"
+"$tmpFile" "$@"
