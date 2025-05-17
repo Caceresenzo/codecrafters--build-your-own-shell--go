@@ -2,9 +2,14 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/term/termios"
 	"golang.org/x/sys/unix"
+)
+
+var (
+	shellProgramPath string
 )
 
 func prompt() {
@@ -113,12 +118,25 @@ func eval(line string) {
 }
 
 func main() {
+	shellProgramPath, _ = filepath.Abs(os.Args[0])
+
 	builtins = make(map[string]BuiltinFunction)
 	builtins["exit"] = builtin_exit
 	builtins["echo"] = builtin_echo
 	builtins["type"] = builtin_type
 	builtins["pwd"] = builtin_pwd
 	builtins["cd"] = builtin_cd
+
+	arguments := os.Args[1:]
+	if len(arguments) != 0 {
+		exitCode := runSingle(parsedLine{
+			arguments: arguments,
+			redirects: make([]redirect, 0),
+		})
+
+		os.Exit(exitCode)
+		return
+	}
 
 	for {
 		line, result := read()
