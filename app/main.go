@@ -108,6 +108,8 @@ func read() (string, ReadResult) {
 }
 
 func eval(line string) {
+	history = append(history, line)
+
 	commands := parseArgv(line)
 
 	if len(commands) == 1 {
@@ -119,6 +121,8 @@ func eval(line string) {
 
 func main() {
 	shellProgramPath, _ = filepath.Abs(os.Args[0])
+
+	history = make([]string, 0)
 
 	builtins = make(map[string]BuiltinFunction)
 	builtins["exit"] = builtin_exit
