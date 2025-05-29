@@ -89,3 +89,5 @@ func builtin_cd(arguments []string, io Io) {
 		fmt.Fprintf(io.Error(), "cd: %s: No such file or directory\n", path)
 	}
 }
+
+func builtin_history(_ []string, _ Io) {}
