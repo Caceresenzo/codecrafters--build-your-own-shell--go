@@ -24,6 +24,27 @@ const (
 	ReadResultContent
 )
 
+const (
+	Up = 'A'
+)
+
+func changeLine(line *string, new string) {
+	backspaces := ""
+	spaces := ""
+
+	for i := 0; i < len(*line); i++ {
+		backspaces += "\b"
+		spaces += " "
+	}
+
+	os.Stdout.WriteString(backspaces)
+	os.Stdout.WriteString(spaces)
+	os.Stdout.WriteString(backspaces)
+
+	os.Stdout.WriteString(new)
+	*line = new
+}
+
 func read() (string, ReadResult) {
 	prompt()
 
@@ -46,6 +67,9 @@ func read() (string, ReadResult) {
 	}
 
 	defer termios.Tcsetattr(stdinFd, termios.TCSANOW, &previous)
+
+	historyLen := len(history)
+	historyPosition := historyLen
 
 	line := ""
 	bell_rang := false
@@ -92,7 +116,14 @@ func read() (string, ReadResult) {
 
 		case 0x1b:
 			os.Stdin.Read(buffer) // '['
-			os.Stdin.Read(buffer) // 'A' or 'B' or 'C' or 'D'
+			os.Stdin.Read(buffer)
+
+			direction := buffer[0]
+
+			if direction == Up && historyPosition != 0 {
+				historyPosition--
+				changeLine(&line, history[historyPosition])
+			}
 
 		case 0x7f:
 			if len(line) != 0 {
@@ -123,6 +154,9 @@ func main() {
 	shellProgramPath, _ = filepath.Abs(os.Args[0])
 
 	history = make([]string, 0)
+	// history = append(history, "111")
+	// history = append(history, "222")
+	// history = append(history, "333")
 
 	builtins = make(map[string]BuiltinFunction)
 	builtins["exit"] = builtin_exit
