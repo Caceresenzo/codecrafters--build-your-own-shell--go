@@ -25,7 +25,8 @@ const (
 )
 
 const (
-	Up = 'A'
+	Up   = 'A'
+	Down = 'B'
 )
 
 func changeLine(line *string, new string) {
@@ -123,6 +124,14 @@ func read() (string, ReadResult) {
 			if direction == Up && historyPosition != 0 {
 				historyPosition--
 				changeLine(&line, history[historyPosition])
+			} else if direction == Down && historyPosition < historyLen {
+				historyPosition++
+
+				if historyPosition == historyLen {
+					changeLine(&line, "")
+				} else {
+					changeLine(&line, history[historyPosition])
+				}
 			}
 
 		case 0x7f:
