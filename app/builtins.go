@@ -90,4 +90,8 @@ func builtin_cd(arguments []string, io Io) {
 	}
 }
 
-func builtin_history(_ []string, _ Io) {}
+func builtin_history(_ []string, io Io) {
+	for i, line := range history {
+		fmt.Fprintf(io.Output(), "%5d  %s\n", i+1, line)
+	}
+}
