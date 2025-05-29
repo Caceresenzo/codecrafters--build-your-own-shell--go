@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -90,8 +91,20 @@ func builtin_cd(arguments []string, io Io) {
 	}
 }
 
-func builtin_history(_ []string, io Io) {
-	for i, line := range history {
-		fmt.Fprintf(io.Output(), "%5d  %s\n", i+1, line)
+func builtin_history(arguments []string, io Io) {
+	var start = 0
+	if len(arguments) > 1 {
+		value, err := strconv.Atoi(arguments[1])
+
+		if err != nil {
+			fmt.Fprintf(io.Error(), "history: invalid number\n")
+			return
+		}
+
+		start = len(history) - value
+	}
+
+	for i, line := range history[start:] {
+		fmt.Fprintf(io.Output(), "%5d  %s\n", start+i+1, line)
 	}
 }
