@@ -126,6 +126,7 @@ func main() {
 	builtins["type"] = builtin_type
 	builtins["pwd"] = builtin_pwd
 	builtins["cd"] = builtin_cd
+	builtins["history"] = builtin_history
 
 	arguments := os.Args[1:]
 	if len(arguments) != 0 {
