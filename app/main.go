@@ -173,6 +173,7 @@ func main() {
 	builtins["history"] = builtin_history
 
 	initializeHistory()
+	defer finalizeHistory()
 
 	arguments := os.Args[1:]
 	if len(arguments) != 0 {
