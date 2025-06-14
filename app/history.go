@@ -32,3 +32,18 @@ func readHistoryFrom(path string) bool {
 
 	return true
 }
+
+func writeHistoryTo(path string) bool {
+	file, err := os.Create(path)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	for _, line := range history {
+		file.WriteString(line)
+		file.WriteString("\n")
+	}
+
+	return true
+}
