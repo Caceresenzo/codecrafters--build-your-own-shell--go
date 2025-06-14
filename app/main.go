@@ -163,9 +163,6 @@ func main() {
 	shellProgramPath, _ = filepath.Abs(os.Args[0])
 
 	history = make([]string, 0)
-	// history = append(history, "111")
-	// history = append(history, "222")
-	// history = append(history, "333")
 
 	builtins = make(map[string]BuiltinFunction)
 	builtins["exit"] = builtin_exit
@@ -174,6 +171,8 @@ func main() {
 	builtins["pwd"] = builtin_pwd
 	builtins["cd"] = builtin_cd
 	builtins["history"] = builtin_history
+
+	initializeHistory()
 
 	arguments := os.Args[1:]
 	if len(arguments) != 0 {
