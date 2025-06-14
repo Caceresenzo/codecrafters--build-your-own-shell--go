@@ -92,8 +92,16 @@ func builtin_cd(arguments []string, io Io) {
 }
 
 func builtin_history(arguments []string, io Io) {
-	var start = 0
+	var first string
 	if len(arguments) > 1 {
+		first = arguments[1]
+	} else {
+		first = ""
+	}
+
+	if first == "-r" {
+		readHistoryFrom(arguments[2])
+	} else if first != "" {
 		value, err := strconv.Atoi(arguments[1])
 
 		if err != nil {
@@ -101,10 +109,9 @@ func builtin_history(arguments []string, io Io) {
 			return
 		}
 
-		start = len(history) - value
-	}
-
-	for i, line := range history[start:] {
-		fmt.Fprintf(io.Output(), "%5d  %s\n", start+i+1, line)
+		start := len(history) - value
+		printHistory(start, io)
+	} else {
+		printHistory(0, io)
 	}
 }
