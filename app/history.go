@@ -7,6 +7,7 @@ import (
 )
 
 var history []string
+var lastAppendIndex int = 0
 
 func printHistory(start int, io Io) {
 	for i, line := range history[start:] {
@@ -34,7 +35,7 @@ func readHistoryFrom(path string) bool {
 }
 
 func writeHistoryTo(path string) bool {
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return false
 	}
@@ -44,6 +45,23 @@ func writeHistoryTo(path string) bool {
 		file.WriteString(line)
 		file.WriteString("\n")
 	}
+
+	return true
+}
+
+func appendHistoryTo(path string) bool {
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	for _, line := range history[lastAppendIndex:] {
+		file.WriteString(line)
+		file.WriteString("\n")
+	}
+
+	lastAppendIndex = len(history)
 
 	return true
 }
