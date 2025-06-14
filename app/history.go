@@ -6,8 +6,18 @@ import (
 	"os"
 )
 
+const HISTFILE_ENVVAR = "HISTFILE"
+
 var history []string
 var lastAppendIndex int = 0
+
+func initializeHistory() {
+	path := os.Getenv(HISTFILE_ENVVAR)
+
+	if path != "" {
+		readHistoryFrom(os.Getenv(HISTFILE_ENVVAR))
+	}
+}
 
 func printHistory(start int, io Io) {
 	for i, line := range history[start:] {

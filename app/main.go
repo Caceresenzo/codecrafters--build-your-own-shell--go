@@ -175,6 +175,8 @@ func main() {
 	builtins["cd"] = builtin_cd
 	builtins["history"] = builtin_history
 
+	initializeHistory()
+
 	arguments := os.Args[1:]
 	if len(arguments) != 0 {
 		exitCode := runSingle(parsedLine{
