@@ -15,7 +15,15 @@ func initializeHistory() {
 	path := os.Getenv(HISTFILE_ENVVAR)
 
 	if path != "" {
-		readHistoryFrom(os.Getenv(HISTFILE_ENVVAR))
+		readHistoryFrom(path)
+	}
+}
+
+func finalizeHistory() {
+	path := os.Getenv(HISTFILE_ENVVAR)
+
+	if path != "" {
+		writeHistoryTo(path)
 	}
 }
 

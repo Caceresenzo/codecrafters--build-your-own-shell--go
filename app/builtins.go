@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type BuiltinFunction func([]string, Io)
+type BuiltinFunction func([]string, Io) CommandResult
 
 var builtins map[string]BuiltinFunction
 
@@ -33,38 +33,56 @@ func locate(program string) (string, bool) {
 	return "", false
 }
 
-func builtin_exit(_ []string, _ Io) {
-	os.Exit(0)
+func builtin_exit(_ []string, _ Io) CommandResult {
+	return CommandResult{
+		ExitCode:  0,
+		ExitShell: true,
+	}
 }
 
-func builtin_echo(arguments []string, io Io) {
+func builtin_echo(arguments []string, io Io) CommandResult {
 	parts := arguments[1:]
 	line := strings.Join(parts, " ")
 	fmt.Fprintf(io.Output(), "%s\n", line)
+
+	return CommandResult{
+		ExitCode:  0,
+		ExitShell: false,
+	}
 }
 
-func builtin_type(arguments []string, io Io) {
+func builtin_type(arguments []string, io Io) CommandResult {
 	program := arguments[1]
 
 	if _, found := builtins[program]; found {
 		fmt.Fprintf(io.Output(), "%s is a shell builtin\n", program)
-		return
-	}
-
-	if path, found := locate(program); found {
+	} else if path, found := locate(program); found {
 		fmt.Fprintf(io.Output(), "%s is %s\n", program, path)
-		return
+	} else {
+		fmt.Fprintf(io.Output(), "%s: not found\n", program)
+		return CommandResult{
+			ExitCode:  1,
+			ExitShell: false,
+		}
 	}
 
-	fmt.Fprintf(io.Output(), "%s: not found\n", program)
+	return CommandResult{
+		ExitCode:  0,
+		ExitShell: false,
+	}
 }
 
-func builtin_pwd(_ []string, io Io) {
+func builtin_pwd(_ []string, io Io) CommandResult {
 	current, _ := os.Getwd()
 	fmt.Fprintf(io.Output(), "%s\n", current)
+
+	return CommandResult{
+		ExitCode:  0,
+		ExitShell: false,
+	}
 }
 
-func builtin_cd(arguments []string, io Io) {
+func builtin_cd(arguments []string, io Io) CommandResult {
 	absolute := ""
 	path := arguments[1]
 
@@ -83,15 +101,28 @@ func builtin_cd(arguments []string, io Io) {
 	}
 
 	if len(absolute) == 0 {
-		return
+		return CommandResult{
+			ExitCode:  0,
+			ExitShell: false,
+		}
 	}
 
 	if err := os.Chdir(absolute); errors.Is(err, os.ErrNotExist) {
 		fmt.Fprintf(io.Error(), "cd: %s: No such file or directory\n", path)
+
+		return CommandResult{
+			ExitCode:  1,
+			ExitShell: false,
+		}
+	}
+
+	return CommandResult{
+		ExitCode:  0,
+		ExitShell: false,
 	}
 }
 
-func builtin_history(arguments []string, io Io) {
+func builtin_history(arguments []string, io Io) CommandResult {
 	var first string
 	if len(arguments) > 1 {
 		first = arguments[1]
@@ -110,12 +141,20 @@ func builtin_history(arguments []string, io Io) {
 
 		if err != nil {
 			fmt.Fprintf(io.Error(), "history: invalid number\n")
-			return
+			return CommandResult{
+				ExitCode:  1,
+				ExitShell: false,
+			}
 		}
 
 		start := len(history) - value
 		printHistory(start, io)
 	} else {
 		printHistory(0, io)
+	}
+
+	return CommandResult{
+		ExitCode:  0,
+		ExitShell: false,
 	}
 }

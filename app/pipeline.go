@@ -6,10 +6,13 @@ import (
 	"os/exec"
 )
 
-func runSingle(parsedLine parsedLine) int {
+func runSingle(parsedLine parsedLine) CommandResult {
 	io, valid := OpenIo(parsedLine.redirects)
 	if !valid {
-		return 1
+		return CommandResult{
+			ExitCode:  1,
+			ExitShell: false,
+		}
 	}
 
 	defer io.Close()
@@ -18,8 +21,7 @@ func runSingle(parsedLine parsedLine) int {
 	program := arguments[0]
 
 	if builtin, found := builtins[program]; found {
-		builtin(arguments, io)
-		return 0
+		return builtin(arguments, io)
 	}
 
 	if path, found := locate(program); found {
@@ -32,11 +34,17 @@ func runSingle(parsedLine parsedLine) int {
 		}
 
 		command.Run()
-		return command.ProcessState.ExitCode()
+		return CommandResult{
+			ExitCode:  command.ProcessState.ExitCode(),
+			ExitShell: false,
+		}
 	}
 
 	fmt.Fprintf(os.Stdout, "%s: command not found\n", program)
-	return 1
+	return CommandResult{
+		ExitCode:  1,
+		ExitShell: false,
+	}
 }
 
 func runMultiple(parsedLines []parsedLine) {

@@ -147,19 +147,29 @@ func read() (string, ReadResult) {
 	}
 }
 
-func eval(line string) {
+type CommandResult struct {
+	ExitCode  int
+	ExitShell bool
+}
+
+func eval(line string) CommandResult {
 	history = append(history, line)
 
 	commands := parseArgv(line)
 
 	if len(commands) == 1 {
-		runSingle(commands[0])
+		return runSingle(commands[0])
 	} else {
 		runMultiple(commands)
 	}
+
+	return CommandResult{
+		ExitCode:  0,
+		ExitShell: false,
+	}
 }
 
-func main() {
+func shellMain() int {
 	shellProgramPath, _ = filepath.Abs(os.Args[0])
 
 	history = make([]string, 0)
@@ -173,16 +183,16 @@ func main() {
 	builtins["history"] = builtin_history
 
 	initializeHistory()
+	defer finalizeHistory()
 
 	arguments := os.Args[1:]
 	if len(arguments) != 0 {
-		exitCode := runSingle(parsedLine{
+		result := runSingle(parsedLine{
 			arguments: arguments,
 			redirects: make([]redirect, 0),
 		})
 
-		os.Exit(exitCode)
-		return
+		return result.ExitCode
 	}
 
 	for {
@@ -190,11 +200,19 @@ func main() {
 
 		switch result {
 		case ReadResultQuit:
-			return
+			break
 		case ReadResultEmpty:
 			continue
 		case ReadResultContent:
-			eval(line)
+			result := eval(line)
+
+			if result.ExitShell {
+				return result.ExitCode
+			}
 		}
 	}
+}
+
+func main() {
+	os.Exit(shellMain())
 }
