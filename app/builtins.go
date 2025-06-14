@@ -101,6 +101,8 @@ func builtin_history(arguments []string, io Io) {
 
 	if first == "-r" {
 		readHistoryFrom(arguments[2])
+	} else if first == "-w" {
+		writeHistoryTo(arguments[2])
 	} else if first != "" {
 		value, err := strconv.Atoi(arguments[1])
 
